@@ -212,7 +212,7 @@ def checkWorldsFirst(Pass, data):
     return False
 
 
-def searchAllPlayers(chartPath=chartPathDef , passPath=passPathDef, useSaved=useSavedDef, sortBy="rankedScore", data=None, disableCharts=True, TwvKOnly= False):
+def searchAllPlayers(chartPath=chartPathDef , passPath=passPathDef, useSaved=useSavedDef, sortBy="rankedScore", data=None, disableCharts=True, TwvKOnly=False, reverse=False):
     util = Utils()
     directCall = False
     if data is None:
@@ -238,9 +238,11 @@ def searchAllPlayers(chartPath=chartPathDef , passPath=passPathDef, useSaved=use
     priority = util.allPassSortPriority.copy()
     priority.remove(sortBy)
     sortCriteria = [sortBy] + priority
-    return reversed(sorted(playerLeaderboard, key=lambda x: [x[criteria] for criteria in sortCriteria]))
+    if reverse:
+        return reversed(sorted(playerLeaderboard, key=lambda x: [x[criteria] for criteria in sortCriteria]))
+    return sorted(playerLeaderboard, key=lambda x: [x[criteria] for criteria in sortCriteria])
 
-def searchAllClears(chartPath=chartPathDef , passPath=passPathDef, useSaved=useSavedDef, sortBy="score", data=None, minScore=0, TwvKOnly=False):
+def searchAllClears(chartPath=chartPathDef , passPath=passPathDef, useSaved=useSavedDef, sortBy="score", data=None, minScore=0, TwvKOnly=False, reverse=False):
     util = Utils()
     directCall = False
     if data is None:
@@ -264,7 +266,9 @@ def searchAllClears(chartPath=chartPathDef , passPath=passPathDef, useSaved=useS
     priority = util.allClearSortPriority.copy()
     priority.remove(sortBy)
     sortCriteria = [sortBy] + priority
-    return reversed(sorted(clears, key=lambda x: [x[criteria] for criteria in sortCriteria]))
+    if reverse:
+        return reversed(sorted(clears, key=lambda x: [x[criteria] for criteria in sortCriteria]))
+    return sorted(clears, key=lambda x: [x[criteria] for criteria in sortCriteria])
 
 if __name__ == "__main__":
     [print(n) for n in searchAllPlayers(TwvKOnly=True, disableCharts=False)]

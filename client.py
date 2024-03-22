@@ -77,10 +77,13 @@ if __name__ == "__main__":
     win.geometry('200x400')
 
     prompt = tk.Entry(win, width=40)
-
     minScore = tk.Entry(win, width=40)
+
     TwvKeyMode = tk.IntVar()
     check12k = tk.Checkbutton(win, text='12K passes only', variable=TwvKeyMode)
+
+    reverseMode = tk.IntVar()
+    reverse = tk.Checkbutton(win, text='Reverse sort order', variable=reverseMode)
 
     sortByPlr = tk.StringVar()
     sortByPlr.set("rankedScore")
@@ -92,8 +95,14 @@ if __name__ == "__main__":
 
     searchChart = tk.Button(win, text='Search by chart id', command=lambda: printList(searchByChart(getInt(prompt.get()))))
     searchPlr = tk.Button(win, text='Search by player', command=lambda: printList(searchByPlayer(prompt.get(), TwvKOnly=TwvKeyMode.get())))
-    searchAllPlr = tk.Button(win, text='Search all players', command=lambda: printList(searchAllPlayers(sortBy=sortByPlr.get(), TwvKOnly=TwvKeyMode.get(), disableCharts=True)))
-    searchAllClr = tk.Button(win, text='Search all charts', command=lambda: printList(searchAllClears(sortBy=sortByClr.get(), TwvKOnly=TwvKeyMode.get(), minScore=getInt(minScore.get()))))
+    searchAllPlr = tk.Button(win, text='Search all players', command=lambda: printList(searchAllPlayers(sortBy=sortByPlr.get(),
+                                                                                                        TwvKOnly=TwvKeyMode.get(),
+                                                                                                        disableCharts=True,
+                                                                                                        reverse=reverseMode.get())))
+    searchAllClr = tk.Button(win, text='Search all charts', command=lambda: printList(searchAllClears(sortBy=sortByClr.get(),
+                                                                                                      TwvKOnly=TwvKeyMode.get(),
+                                                                                                      minScore=getInt(minScore.get()),
+                                                                                                      reverse=reverseMode.get())))
 
 
     tk.Label(win, text="Chart ID / Player's nickname").pack()
@@ -108,6 +117,7 @@ if __name__ == "__main__":
     searchAllClr.pack(expand=tk.FALSE, fill=tk.X, side=tk.TOP)
 
     check12k.pack()
+    reverse.pack()
 
     tk.Label(win, text="Sort by for All Player search").pack()
     sortPlrDrop.pack()
