@@ -2,8 +2,7 @@ import requests as r, json, math as m
 
 chartLink = "https://be.t21c.kro.kr/levels"
 passLink = "https://be.t21c.kro.kr/passes"
-chartPath = "charts.json"
-passPath = "passes.json"
+plrLink = "https://be.t21c.kro.kr/players"
 
 gmConst = 315
 start = 1
@@ -149,19 +148,32 @@ class Utils:
 
 
 class DataScraper:
-    def __init__(self, chartPath=None, passPath=None):
+    def __init__(self, chartPath, passPath, playerPath, refresh=False):
         self.charts = None
         self.passes = None
+        self.players = None
+        self.chartPath = chartPath
+        self.passPath = passPath
+        self.playerPath = playerPath
         self.chartsCount, self.passesCount = 0,0
-        try:
-            self.readCharts(chartPath)
-            self.readPasses(passPath)
-        except:
-            self.getCharts()
-            self.getPasses()
         self.pguSort = {"P": 1,
                         "G": 2,
                         "U": 3}
+        if refresh:
+            self.getCharts()
+            self.getPasses()
+            self.getPlayers()
+            return
+        try:
+            if not refresh:
+                self.readCharts(chartPath)
+                self.readPasses(passPath)
+                self.readPlayers(playerPath)
+        except:
+            self.getCharts()
+            self.getPasses()
+            self.getPlayers()
+
 
     def readCharts(self, path):
         with open(path, "r") as f:
@@ -175,12 +187,17 @@ class DataScraper:
             self.passes = file["results"]
             self.passesCount = file["count"]
 
+    def readPlayers(self, path):
+        with open(path, "r") as f:
+            self.players = json.load(f)
+
+
     def getCharts(self):
         res = r.get(chartLink)
         print("got charts")
         self.charts = json.loads(res.content)["results"]
         self.chartsCount = json.loads(res.content)["count"]
-        with open(chartPath, "w+") as f:
+        with open(self.chartPath, "w+") as f:
             json.dump(json.loads(res.content), f)
 
     def getPasses(self):
@@ -188,8 +205,19 @@ class DataScraper:
         print("got passes")
         self.passes = json.loads(res.content)["results"]
         self.passesCount = json.loads(res.content)["count"]
-        with open(passPath, "w+") as f:
+        with open(self.passPath, "w+") as f:
             json.dump(json.loads(res.content), f)
 
-
-
+    def getPlayers(self):
+        res = r.get(plrLink)
+        print("got players")
+        rawPlr = json.loads(res.content)["results"]
+        plrDict = {}
+        for player in rawPlr:
+            temp = player.copy()
+            name = temp["name"]
+            del temp["name"]
+            plrDict.update({name: temp})
+        self.players = plrDict
+        with open(self.playerPath, "w+") as f:
+            json.dump(self.players, f)

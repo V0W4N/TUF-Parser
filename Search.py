@@ -2,32 +2,35 @@ from Core import *
 import os, sys
 from io import StringIO
 from datetime import datetime
+from time import perf_counter
 
 DEBUG = False
 chartPathDef = "charts.json"
 passPathDef = "passes.json"
+playerPathDef = "player.json"
 useSavedDef = 1
 
 # redirects all text from printfs to useless IO if not debugging=
 
 
-def initData(chartPath, passPath, useSaved):
-    if chartPath and passPath and useSaved:
-        if os.path.exists(chartPath) and os.path.exists(passPath):
+def initData(chartPath, passPath, playerPath, useSaved):
+    if chartPath and passPath and playerPath and useSaved:
+        if os.path.exists(chartPath) and os.path.exists(passPath) and os.path.exists(playerPath):
             print("using saved...")
-            return DataScraper(chartPath, passPath)
+            return DataScraper(chartPath, passPath, playerPath)
         else:
-            return DataScraper()
+            return DataScraper(chartPathDef, passPathDef, playerPathDef, True)
     else:
-        return DataScraper()
+        return DataScraper(chartPathDef, passPathDef, playerPathDef, True)
 
-def searchByChart(chartId: int, chartPath=chartPathDef, passPath=passPathDef, useSaved=useSavedDef, data=None, getAll=False) \
+
+def searchByChart(chartId: int, chartPath=chartPathDef, passPath=passPathDef, playerPath=playerPathDef, useSaved=useSavedDef, data=None, getAll=False) \
         -> (list, list):
     util = Utils()
     directCall = False
     if data is None:
         directCall = True
-        data = initData(chartPath, passPath, useSaved)
+        data = initData(chartPath, passPath, playerPath, useSaved)
 
     idOffset = 0
     initChartId = chartId
@@ -82,13 +85,20 @@ def searchByChart(chartId: int, chartPath=chartPathDef, passPath=passPathDef, us
 
 
 
-def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDef, useSaved=useSavedDef, data=None, TwvKOnly=False) \
+def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDef, playerPath=playerPathDef, useSaved=useSavedDef, data=None, TwvKOnly=False) \
         -> dict:
     util = Utils()
     directCall = False
     if data is None:
         directCall = True
-        data = initData(chartPath, passPath, useSaved)
+        data = initData(chartPath, passPath, playerPath, useSaved)
+
+    if playerName not in data.players.keys():
+        print("Player not found!")
+        return {}
+    if data.players[playerName]["isBanned"]:
+        print("Player is banned!")
+        return {}
 
     playerPasses = []
     for Pass in data.passes:
@@ -197,6 +207,7 @@ def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDe
             "WFPasses": firstPasses,
             "topDiff": topDiff,
             "top12kDiff": top12kDiff,
+            "country": data.players[playerName]["country"],
             "allScores": scoresNew}
 
 
@@ -212,25 +223,25 @@ def checkWorldsFirst(Pass, data):
     return False
 
 
-def searchAllPlayers(chartPath=chartPathDef , passPath=passPathDef, useSaved=useSavedDef, sortBy="rankedScore", data=None, disableCharts=True, TwvKOnly=False, reverse=False):
+def searchAllPlayers(chartPath=chartPathDef , passPath=passPathDef, playerPath=playerPathDef, useSaved=useSavedDef, sortBy="rankedScore", data=None, disableCharts=True, TwvKOnly=False, reverse=False):
     util = Utils()
     directCall = False
     if data is None:
         directCall = True
-        data = initData(chartPath, passPath, useSaved)
+        data = initData(chartPath, passPath, playerPath, useSaved)
 
-    playerNameList = []
-    for Pass in data.passes:
-        if Pass["player"] not in playerNameList:
-            playerNameList.append(Pass["player"])
+    playerNameList = data.players.keys()
     playerLeaderboard = []
     i = 0
     n = len(playerNameList)
     print("Players checked:")
     for player in playerNameList:
         i += 1
-        print("\r",i / n * 100, "%          ", end="", flush=True)
-        search = searchByPlayer(player, chartPath, passPath, True, data, TwvKOnly)
+        print("\r",round(i / n * 100,3), "%          ", end="", flush=True)
+        if data.players[player]["isBanned"]:
+            #print("skipped ", player)
+            continue
+        search = searchByPlayer(player, chartPath, passPath, playerPath,True, data, TwvKOnly)
         if search["avgXacc"]:
             playerLeaderboard.append(search)
             if disableCharts:
@@ -242,12 +253,13 @@ def searchAllPlayers(chartPath=chartPathDef , passPath=passPathDef, useSaved=use
         return reversed(sorted(playerLeaderboard, key=lambda x: [x[criteria] for criteria in sortCriteria]))
     return sorted(playerLeaderboard, key=lambda x: [x[criteria] for criteria in sortCriteria])
 
-def searchAllClears(chartPath=chartPathDef , passPath=passPathDef, useSaved=useSavedDef, sortBy="score", data=None, minScore=0, TwvKOnly=False, reverse=False):
+
+def searchAllClears(chartPath=chartPathDef , passPath=passPathDef, playerPath=playerPathDef, useSaved=useSavedDef, sortBy="score", data=None, minScore=0, TwvKOnly=False, reverse=False):
     util = Utils()
     directCall = False
     if data is None:
         directCall = True
-        data = initData(chartPath, passPath, useSaved)
+        data = initData(chartPath, passPath, playerPath, useSaved)
 
     leaderboard = list(searchAllPlayers(data=data, disableCharts=False))
     clears = []
@@ -256,7 +268,10 @@ def searchAllClears(chartPath=chartPathDef , passPath=passPathDef, useSaved=useS
     print("Players checked:")
     for player in leaderboard:
         i += 1
-        print("\r",i / n * 100, "%                   ", end="", flush=True)
+        print("\r",round(i / n * 100,3), "%                   ", end="", flush=True)
+        if data.players[player['name']]["isBanned"]:
+            #print("skipped ", player)
+            continue
         allClears = player["allScores"]
         for clear in allClears:
             if clear["score"] >= minScore and (not TwvKOnly or score["is12K"]):
@@ -271,4 +286,6 @@ def searchAllClears(chartPath=chartPathDef , passPath=passPathDef, useSaved=useS
     return sorted(clears, key=lambda x: [x[criteria] for criteria in sortCriteria])
 
 if __name__ == "__main__":
-    [print(n) for n in searchAllPlayers(TwvKOnly=True, disableCharts=False)]
+    st = perf_counter()
+    [print(n) for n in searchAllPlayers(TwvKOnly=False, disableCharts=True, useSaved=1)]
+    print(perf_counter()-st, " s")

@@ -85,6 +85,9 @@ if __name__ == "__main__":
     reverseMode = tk.IntVar()
     reverse = tk.Checkbutton(win, text='Reverse sort order', variable=reverseMode)
 
+    updateSaved = tk.IntVar()
+    update = tk.Checkbutton(win, text='Update from API', variable=updateSaved)
+
     sortByPlr = tk.StringVar()
     sortByPlr.set("rankedScore")
     sortPlrDrop = tk.OptionMenu(win, sortByPlr, *playerOptions)
@@ -93,16 +96,23 @@ if __name__ == "__main__":
     sortByClr.set("score")
     sortClrDrop = tk.OptionMenu(win, sortByClr, *clearOptions)
 
-    searchChart = tk.Button(win, text='Search by chart id', command=lambda: printList(searchByChart(getInt(prompt.get()))))
-    searchPlr = tk.Button(win, text='Search by player', command=lambda: printList(searchByPlayer(prompt.get(), TwvKOnly=TwvKeyMode.get())))
+    searchChart = tk.Button(win, text='Search by chart id', command=lambda: printList(searchByChart(getInt(prompt.get()),
+                                                                                                    useSaved=updateSaved.get()
+                                                                                                    )))
+    searchPlr = tk.Button(win, text='Search by player', command=lambda: printList(searchByPlayer(prompt.get(),
+                                                                                                 TwvKOnly=TwvKeyMode.get())))
     searchAllPlr = tk.Button(win, text='Search all players', command=lambda: printList(searchAllPlayers(sortBy=sortByPlr.get(),
                                                                                                         TwvKOnly=TwvKeyMode.get(),
                                                                                                         disableCharts=True,
-                                                                                                        reverse=reverseMode.get())))
+                                                                                                        reverse=reverseMode.get(),
+                                                                                                        useSaved=not updateSaved.get()
+                                                                                                        )))
     searchAllClr = tk.Button(win, text='Search all charts', command=lambda: printList(searchAllClears(sortBy=sortByClr.get(),
                                                                                                       TwvKOnly=TwvKeyMode.get(),
                                                                                                       minScore=getInt(minScore.get()),
-                                                                                                      reverse=reverseMode.get())))
+                                                                                                      reverse=reverseMode.get(),
+                                                                                                      useSaved=not updateSaved.get()
+                                                                                                      )))
 
 
     tk.Label(win, text="Chart ID / Player's nickname").pack()
@@ -116,25 +126,17 @@ if __name__ == "__main__":
     searchAllPlr.pack(expand=tk.FALSE, fill=tk.X, side=tk.TOP)
     searchAllClr.pack(expand=tk.FALSE, fill=tk.X, side=tk.TOP)
 
-    check12k.pack()
-    reverse.pack()
-
     tk.Label(win, text="Sort by for All Player search").pack()
     sortPlrDrop.pack()
     tk.Label(win, text="Sort by for All Clear search").pack()
     sortClrDrop.pack()
 
+    check12k.pack()
+    reverse.pack()
+    update.pack()
+
+
 
 
 
     win.mainloop()
-
-    #res = searchAllPlayers()
-    #for r in res:
-    #    print(r)
-    #s = perf_counter()
-    #res = searchByPlayer('Ghostify', useSaved=1)
-    #print(res)
-    #print(perf_counter()-s, "seconds")
-    #searchByChart(65)
-    #window.mainloop()
