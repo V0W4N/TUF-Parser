@@ -49,20 +49,17 @@ def printList(l: dict):
     if not l:
         print("Nothing in the list!")
         return
-    if type(l) == dict:
+    print("\n")
+    if type(l) is dict:
         for item in l.items():
-            print(item)
+            if item[0] == "allScores":
+                for chart in item[1]:
+                    print(chart)
+            else:
+                print(item)
     else:
         for item in l:
             print(item)
-    del l
-
-def printItems(d: list):
-    if not d:
-        print("Nothing in the list!")
-        return
-    for item in d:
-        print(item.items())
     del l
 
 def getInt(s):
@@ -83,7 +80,7 @@ if __name__ == "__main__":
     check12k = tk.Checkbutton(win, text='12K passes only', variable=TwvKeyMode)
 
     reverseMode = tk.IntVar()
-    reverse = tk.Checkbutton(win, text='Reverse sort order', variable=reverseMode)
+    reverse = tk.Checkbutton(win, text='Reverse sort order /\n Display cleared charts for plr', variable=reverseMode)
 
     updateSaved = tk.IntVar()
     update = tk.Checkbutton(win, text='Update from API', variable=updateSaved)
@@ -100,7 +97,9 @@ if __name__ == "__main__":
                                                                                                     useSaved=updateSaved.get()
                                                                                                     )))
     searchPlr = tk.Button(win, text='Search by player', command=lambda: printList(searchByPlayer(prompt.get(),
-                                                                                                 TwvKOnly=TwvKeyMode.get())))
+                                                                                                 TwvKOnly=TwvKeyMode.get(),
+                                                                                                 showCharts=reverseMode.get()
+                                                                                                 )))
     searchAllPlr = tk.Button(win, text='Search all players', command=lambda: printList(searchAllPlayers(sortBy=sortByPlr.get(),
                                                                                                         TwvKOnly=TwvKeyMode.get(),
                                                                                                         disableCharts=True,

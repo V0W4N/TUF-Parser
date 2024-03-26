@@ -4,14 +4,10 @@ from io import StringIO
 from datetime import datetime
 from time import perf_counter
 
-DEBUG = False
 chartPathDef = "charts.json"
 passPathDef = "passes.json"
 playerPathDef = "player.json"
 useSavedDef = 1
-
-# redirects all text from printfs to useless IO if not debugging=
-
 
 def initData(chartPath, passPath, playerPath, useSaved):
     if chartPath and passPath and playerPath and useSaved:
@@ -46,7 +42,6 @@ def searchByChart(chartId: int, chartPath=chartPathDef, passPath=passPathDef, pl
         return []
     scores = []
     for Pass in validPasses:
-        # [id, xacc, name, score, vidLink, datetime, isFirst, is12k, noHolds]
         try:
             date = datetime.strptime(Pass["vidUploadTime"].split("Z")[0], "%Y-%m-%dT%H:%M:%S")
         except:
@@ -85,7 +80,7 @@ def searchByChart(chartId: int, chartPath=chartPathDef, passPath=passPathDef, pl
 
 
 
-def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDef, playerPath=playerPathDef, useSaved=useSavedDef, data=None, TwvKOnly=False) \
+def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDef, playerPath=playerPathDef, useSaved=useSavedDef, data=None, TwvKOnly=False, showCharts=True) \
         -> dict:
     util = Utils()
     directCall = False
@@ -128,7 +123,6 @@ def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDe
         while 1:
             if chart["id"] == prevId:
                 badFlag = True
-                #print(f"bad id, skipping ({chartId})")
                 break
             if chart["id"] == chartId:
                 break
@@ -139,7 +133,8 @@ def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDe
             prevId = prevIdTemp
             prevIdTemp = chart["id"]
             chart = data.charts[chartPos + idOffset]
-        if badFlag: continue
+        if badFlag:
+            continue
         isWorldsFirst = checkWorldsFirst(Pass, data)
         if isWorldsFirst:
             firstPasses += 1
@@ -151,8 +146,8 @@ def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDe
                         "chartId": chart["id"],
                         "score": util.getScoreV2(Pass, chart),
                         "Xacc": util.getXacc(Pass["judgements"]),
-                        "diff":chart["pguDiff"],
                         "song": chart['song'],
+                        "diff":chart["pguDiff"],
                         "creator":chart['creator'],
                         "date":date,
                         "isWorldsFirst": isWorldsFirst,
@@ -198,7 +193,7 @@ def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDe
         avgAcc = sum(XaccList)/len(XaccList)
     else:
         avgAcc = 0
-    return {"player":playerName,
+    ret = {"player":playerName,
             "rankedScore":rankedScore,
             "generalScore": general,
             "avgXacc": avgAcc,
@@ -207,17 +202,16 @@ def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDe
             "WFPasses": firstPasses,
             "topDiff": topDiff,
             "top12kDiff": top12kDiff,
-            "country": data.players[playerName]["country"],
-            "allScores": scoresNew}
+            "country": data.players[playerName]["country"]}
+    if showCharts:
+        ret.update({"allScores": scoresNew})
+    return ret
 
 
 def checkWorldsFirst(Pass, data):
     passes = searchByChart(Pass["levelId"], data=data, getAll=True)
     for p in passes:
         if p["WFPass"]:
-            #print()
-            #print(p)
-            #print(Pass)
             if p["id"] == Pass["id"]:
                 return True
     return False
@@ -239,7 +233,6 @@ def searchAllPlayers(chartPath=chartPathDef , passPath=passPathDef, playerPath=p
         i += 1
         print("\r",round(i / n * 100,3), "%          ", end="", flush=True)
         if data.players[player]["isBanned"]:
-            #print("skipped ", player)
             continue
         search = searchByPlayer(player, chartPath, passPath, playerPath,True, data, TwvKOnly)
         if search["avgXacc"]:
@@ -266,11 +259,11 @@ def searchAllClears(chartPath=chartPathDef , passPath=passPathDef, playerPath=pl
     i = 0
     n = len(leaderboard)
     print("Players checked:")
+    print(leaderboard)
     for player in leaderboard:
         i += 1
         print("\r",round(i / n * 100,3), "%                   ", end="", flush=True)
-        if data.players[player['name']]["isBanned"]:
-            #print("skipped ", player)
+        if data.players[player['player']]["isBanned"]:
             continue
         allClears = player["allScores"]
         for clear in allClears:
