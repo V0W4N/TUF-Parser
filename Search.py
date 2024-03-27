@@ -35,7 +35,11 @@ def searchByChart(chartId: int, chartPath=chartPathDef, passPath=passPathDef, pl
     chart = data.charts[chartId-idOffset]
     while chart["id"] > chartId:
         idOffset += 1
-        chart = data.charts[chartId-idOffset]
+        try:
+            chart = data.charts[chartId-idOffset]
+        except:
+            print("Chart ID not found!")
+            return []
     validPasses = [Pass for Pass in data.passes
                    if Pass["levelId"] == initChartId]
     if not validPasses:
@@ -46,18 +50,23 @@ def searchByChart(chartId: int, chartPath=chartPathDef, passPath=passPathDef, pl
             date = datetime.strptime(Pass["vidUploadTime"].split("Z")[0], "%Y-%m-%dT%H:%M:%S")
         except:
             date = datetime.today()
-        scores.append({"diff": chart["diff"],
-                            "id": Pass["id"],
-                            "chartId": chart["id"],
-                            "song": chart["song"],
+        if not Pass["speed"]:
+            speed = 1.0
+        else:
+            speed = Pass["speed"]
+        scores.append({"id": Pass["id"],
+                            "score": util.getScoreV2(Pass, chart),
+                            "speed": speed,
                             "Xacc": util.getXacc(Pass["judgements"]),
                             "player": Pass["player"],
-                            "score": util.getScoreV2(Pass, chart),
                             "vidLink": Pass["vidLink"],
                             "date": date,
                             "WFPass": False,
                             "is12K": Pass["is12K"],
-                            "isNoHold": Pass["isNoHoldTap"]
+                            "isNoHold": Pass["isNoHoldTap"],
+                            "diff": chart["diff"],
+                            "chartId": chart["id"],
+                            "song": chart["song"],
                        })
     scores = list(reversed(sorted(scores, key=lambda x: (x["score"]))))
     datedScores = sorted(scores, key=lambda x: (x["date"]))
@@ -156,17 +165,22 @@ def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDe
                         "vidLink":Pass["vidLink"],
                         })
         try:
+
             pgu = chart["pguDiff"][0]
             num = int(chart["pguDiff"][1:])
+            print(chart["pguDiff"])
+            print(Pass["is12K"])
             if data.pguSort[topDiff[0]] < data.pguSort[pgu]:
                 topDiff[0] = pgu
                 topDiff[1] = num
-                if Pass["is12K"]:
-                    top12kDiff = topDiff.copy()
+            if data.pguSort[top12kDiff[0]] < data.pguSort[pgu] and Pass["is12K"]:
+                top12kDiff[0] = pgu
+                top12kDiff[1] = num
+
             if data.pguSort[topDiff[0]] == data.pguSort[pgu] and int(topDiff[1]) < num:
                 topDiff[1] = num
-                if Pass["is12K"]:
-                    top12kDiff = topDiff.copy()
+            if data.pguSort[top12kDiff[0]] == data.pguSort[pgu] and int(top12kDiff[1]) < num and Pass["is12K"]:
+                top12kDiff[1] = num
         except:
             pass
 

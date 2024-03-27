@@ -94,11 +94,12 @@ if __name__ == "__main__":
     sortClrDrop = tk.OptionMenu(win, sortByClr, *clearOptions)
 
     searchChart = tk.Button(win, text='Search by chart id', command=lambda: printList(searchByChart(getInt(prompt.get()),
-                                                                                                    useSaved=updateSaved.get()
+                                                                                                    useSaved=not updateSaved.get()
                                                                                                     )))
     searchPlr = tk.Button(win, text='Search by player', command=lambda: printList(searchByPlayer(prompt.get(),
                                                                                                  TwvKOnly=TwvKeyMode.get(),
-                                                                                                 showCharts=reverseMode.get()
+                                                                                                 showCharts=reverseMode.get(),
+                                                                                                 useSaved=not updateSaved.get()
                                                                                                  )))
     searchAllPlr = tk.Button(win, text='Search all players', command=lambda: printList(searchAllPlayers(sortBy=sortByPlr.get(),
                                                                                                         TwvKOnly=TwvKeyMode.get(),

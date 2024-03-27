@@ -81,6 +81,7 @@ class Utils:
 
     def getSpeedMtp(self, SPEED, isDesBus=False):
         if isDesBus:
+            print("BUS IN DESERT YOOOOO")
             if not SPEED or SPEED == 1:
                 return 1
             elif SPEED > 1:
@@ -108,10 +109,12 @@ class Utils:
     def getScore(self, passData, chartData):
         speed = passData['speed']
         diff = chartData['pdnDiff']
+        legacyDiff = chartData['diff']
         inputs = passData['judgements']
         base = chartData['baseScore']
+        print(diff)
         xaccMtp = self.getXaccMtp(inputs)
-        if diff == 64:
+        if legacyDiff == 64:
             speedMtp = self.getSpeedMtp(speed, True)
             score = max(base * xaccMtp * speedMtp, 1)
         else:
