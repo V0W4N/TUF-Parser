@@ -54,23 +54,26 @@ def searchByChart(chartId: int, chartPath=chartPathDef, passPath=passPathDef, pl
             speed = 1.0
         else:
             speed = Pass["speed"]
-        scores.append({"id": Pass["id"],
-                            "score": util.getScoreV2(Pass, chart),
-                            "speed": speed,
-                            "Xacc": util.getXacc(Pass["judgements"]),
+        scores.append({
                             "player": Pass["player"],
+                            "song": chart["song"],
+                            "score": util.getScoreV2(Pass, chart),
+                            "pguDiff": chart["pguDiff"],
+                            "Xacc": util.getXacc(Pass["judgements"]),
+                            "speed": speed,
+                            "isWorldsFirst": False,
                             "vidLink": Pass["vidLink"],
                             "date": date,
-                            "WFPass": False,
                             "is12K": Pass["is12K"],
                             "isNoHold": Pass["isNoHoldTap"],
-                            "diff": chart["diff"],
+                            "judgements": Pass["judgements"],
+                            "pdnDiff": chart["pdnDiff"],
                             "chartId": chart["id"],
-                            "song": chart["song"],
+                            "passId": Pass["id"],
                        })
     scores = list(reversed(sorted(scores, key=lambda x: (x["score"]))))
     datedScores = sorted(scores, key=lambda x: (x["date"]))
-    datedScores[0]["WFPass"] = True
+    datedScores[0]["isWorldsFirst"] = True
     if getAll:
         return datedScores
     usedNames = []
@@ -151,25 +154,31 @@ def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDe
             date = datetime.strptime(Pass["vidUploadTime"].split("Z")[0], "%Y-%m-%dT%H:%M:%S")
         except:
             date = datetime.today()
+        if not Pass["speed"]:
+            speed = 1.0
+        else:
+            speed = Pass["speed"]
         scores.append({
-                        "chartId": chart["id"],
-                        "score": util.getScoreV2(Pass, chart),
-                        "Xacc": util.getXacc(Pass["judgements"]),
-                        "song": chart['song'],
-                        "diff":chart["pguDiff"],
-                        "creator":chart['creator'],
-                        "date":date,
-                        "isWorldsFirst": isWorldsFirst,
-                        "is12K":Pass['is12K'],
-                        "pdnDiff":chart["pdnDiff"],
-                        "vidLink":Pass["vidLink"],
-                        })
+                            "player": Pass["player"],
+                            "song": chart["song"],
+                            "score": util.getScoreV2(Pass, chart),
+                            "pguDiff": chart["pguDiff"],
+                            "Xacc": util.getXacc(Pass["judgements"]),
+                            "speed": speed,
+                            "isWorldsFirst": False,
+                            "vidLink": Pass["vidLink"],
+                            "date": date,
+                            "is12K": Pass["is12K"],
+                            "isNoHold": Pass["isNoHoldTap"],
+                            "judgements": Pass["judgements"],
+                            "pdnDiff": chart["pdnDiff"],
+                            "chartId": chart["id"],
+                            "passId": Pass["id"],
+                       })
         try:
 
             pgu = chart["pguDiff"][0]
             num = int(chart["pguDiff"][1:])
-            print(chart["pguDiff"])
-            print(Pass["is12K"])
             if data.pguSort[topDiff[0]] < data.pguSort[pgu]:
                 topDiff[0] = pgu
                 topDiff[1] = num
@@ -190,7 +199,7 @@ def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDe
     for score in scores:
         if score["chartId"] not in usedIds and (not TwvKOnly or score["is12K"]):
             validScores.append(score)
-            if score["diff"][0] == "U":
+            if score["pguDiff"][0] == "U":
                 uPasses += 1
             usedIds.append(score["chartId"])
             XaccList.append(score["Xacc"])
@@ -225,8 +234,8 @@ def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDe
 def checkWorldsFirst(Pass, data):
     passes = searchByChart(Pass["levelId"], data=data, getAll=True)
     for p in passes:
-        if p["WFPass"]:
-            if p["id"] == Pass["id"]:
+        if p["isWorldsFirst"]:
+            if p["chartId"] == Pass["id"]:
                 return True
     return False
 
@@ -273,7 +282,6 @@ def searchAllClears(chartPath=chartPathDef , passPath=passPathDef, playerPath=pl
     i = 0
     n = len(leaderboard)
     print("Players checked:")
-    print(leaderboard)
     for player in leaderboard:
         i += 1
         print("\r",round(i / n * 100,3), "%                   ", end="", flush=True)
