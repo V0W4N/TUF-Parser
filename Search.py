@@ -9,6 +9,11 @@ passPathDef = "passes.json"
 playerPathDef = "player.json"
 useSavedDef = 1
 
+# uses custom-made result objects defined within Core.py
+# those have getitem and behave like a dictionary
+# call .get() to pull the dict formatted data from it
+# named with PascalCase instead of camelCase
+
 def initData(chartPath, passPath, playerPath, useSaved):
     if chartPath and passPath and playerPath and useSaved:
         if os.path.exists(chartPath) and os.path.exists(passPath) and os.path.exists(playerPath):
@@ -32,6 +37,8 @@ def searchByChart(chartId: int, chartPath=chartPathDef, passPath=passPathDef, pl
     initChartId = chartId
     if chartId >= data.chartsCount:
         chartId = data.chartsCount-1
+    if chartId <= 0:
+        chartId = 1
     chart = data.charts[chartId-idOffset]
     while chart["id"] > chartId:
         idOffset += 1
@@ -44,7 +51,7 @@ def searchByChart(chartId: int, chartPath=chartPathDef, passPath=passPathDef, pl
                    if Pass["levelId"] == initChartId]
     if not validPasses:
         return []
-    scores = []
+    Scores = []
     for Pass in validPasses:
         try:
             date = datetime.strptime(Pass["vidUploadTime"].split("Z")[0], "%Y-%m-%dT%H:%M:%S")
@@ -54,7 +61,7 @@ def searchByChart(chartId: int, chartPath=chartPathDef, passPath=passPathDef, pl
             speed = 1.0
         else:
             speed = Pass["speed"]
-        scores.append({
+        Scores.append(ResultObj().updateParams({
                             "player": Pass["player"],
                             "song": chart["song"],
                             "score": util.getScoreV2(Pass, chart),
@@ -70,17 +77,17 @@ def searchByChart(chartId: int, chartPath=chartPathDef, passPath=passPathDef, pl
                             "pdnDiff": chart["pdnDiff"],
                             "chartId": chart["id"],
                             "passId": Pass["id"],
-                       })
-    scores = list(reversed(sorted(scores, key=lambda x: (x["score"]))))
-    datedScores = sorted(scores, key=lambda x: (x["date"]))
-    datedScores[0]["isWorldsFirst"] = True
+                       }))
+    Scores = list(reversed(sorted(Scores, key=lambda x: (x["score"]))))
+    datedScores = sorted(Scores, key=lambda x: (x["date"]))
+    datedScores[0].params["isWorldsFirst"] = True
     if getAll:
         return datedScores
     usedNames = []
     validScores = []
-    for score in scores:
+    for score in Scores:
         if score["player"] not in usedNames:
-            validScores.append(score)
+            validScores.append(score.get())
             usedNames.append(score['player'])
 
 
@@ -112,7 +119,7 @@ def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDe
         if Pass["player"] == playerName:
             playerPasses.append(Pass)
 
-    scores = []
+    Scores = []
     uPasses = 0
     firstPasses = 0
     XaccList = []
@@ -158,7 +165,7 @@ def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDe
             speed = 1.0
         else:
             speed = Pass["speed"]
-        scores.append({
+        Scores.append(ResultObj().updateParams({
                             "player": Pass["player"],
                             "song": chart["song"],
                             "score": util.getScoreV2(Pass, chart),
@@ -174,7 +181,7 @@ def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDe
                             "pdnDiff": chart["pdnDiff"],
                             "chartId": chart["id"],
                             "passId": Pass["id"],
-                       })
+                       }))
         try:
 
             pgu = chart["pguDiff"][0]
@@ -193,30 +200,31 @@ def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDe
         except:
             pass
 
-    scores = list(reversed(sorted(scores, key=lambda x: x["score"])))
+    Scores = list(reversed(sorted(Scores, key=lambda x: x["score"])))
     usedIds = []
     validScores = []
-    for score in scores:
-        if score["chartId"] not in usedIds and (not TwvKOnly or score["is12K"]):
-            validScores.append(score)
-            if score["pguDiff"][0] == "U":
+    for Score in Scores:
+        if Score["chartId"] not in usedIds and (not TwvKOnly or Score["is12K"]):
+            validScores.append(Score)
+            if Score["pguDiff"][0] == "U":
                 uPasses += 1
-            usedIds.append(score["chartId"])
-            XaccList.append(score["Xacc"])
+            usedIds.append(Score["chartId"])
+            XaccList.append(Score["Xacc"])
 
-    rankedScore = util.getRankedScore([score["score"] for score in validScores])
-    general = util.getGeneralScore([score["score"] for score in validScores])
+    rankedScore = util.getRankedScore([Score["score"] for Score in validScores])
+    general = util.getGeneralScore([Score["score"] for Score in validScores])
     topDiff = topDiff[0]+str(topDiff[1])
     top12kDiff = top12kDiff[0]+str(top12kDiff[1])
 
     scoresNew = []
-    for score in validScores:
-        scoresNew.append(score)
+    for Score in validScores:
+        scoresNew.append(Score.get())
     if XaccList:
         avgAcc = sum(XaccList)/len(XaccList)
     else:
         avgAcc = 0
-    ret = {"player":playerName,
+    Player = PlayerObj().updateParams({
+            "player":playerName,
             "rankedScore":rankedScore,
             "generalScore": general,
             "avgXacc": avgAcc,
@@ -225,10 +233,10 @@ def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDe
             "WFPasses": firstPasses,
             "topDiff": topDiff,
             "top12kDiff": top12kDiff,
-            "country": data.players[playerName]["country"]}
+            "country": data.players[playerName]["country"]})
     if showCharts:
-        ret.update({"allScores": scoresNew})
-    return ret
+        Player.addScores(scoresNew)
+    return Player.get()
 
 
 def checkWorldsFirst(Pass, data):
@@ -261,7 +269,7 @@ def searchAllPlayers(chartPath=chartPathDef , passPath=passPathDef, playerPath=p
         if search["avgXacc"]:
             playerLeaderboard.append(search)
             if disableCharts:
-                del playerLeaderboard[-1]["allScores"]
+                 playerLeaderboard[-1]["allScores"] = ""
     priority = util.allPassSortPriority.copy()
     priority.remove(sortBy)
     sortCriteria = [sortBy] + priority
@@ -278,7 +286,7 @@ def searchAllClears(chartPath=chartPathDef , passPath=passPathDef, playerPath=pl
         data = initData(chartPath, passPath, playerPath, useSaved)
 
     leaderboard = list(searchAllPlayers(data=data, disableCharts=False))
-    clears = []
+    Clears = []
     i = 0
     n = len(leaderboard)
     print("Players checked:")
@@ -289,18 +297,18 @@ def searchAllClears(chartPath=chartPathDef , passPath=passPathDef, playerPath=pl
             continue
         allClears = player["allScores"]
         for clear in allClears:
-            if clear["score"] >= minScore and (not TwvKOnly or score["is12K"]):
-                result = {"player": player["player"]}
-                result.update(clear)
-                clears.append(result)
+            if clear["score"] >= minScore and (not TwvKOnly or clear["is12K"]):
+                Result = ResultObj().updateParams({"player": player["player"]})
+                Result.updateParams(clear)
+                Clears.append(Result)
     priority = util.allClearSortPriority.copy()
     priority.remove(sortBy)
     sortCriteria = [sortBy] + priority
     if reverse:
-        return reversed(sorted(clears, key=lambda x: [x[criteria] for criteria in sortCriteria]))
-    return sorted(clears, key=lambda x: [x[criteria] for criteria in sortCriteria])
+        return [Item.get() for Item in reversed(sorted(Clears, key=lambda x: [x[criteria] for criteria in sortCriteria]))]
+    return [Item.get() for Item in sorted(Clears, key=lambda x: [x[criteria] for criteria in sortCriteria])]
 
 if __name__ == "__main__":
     st = perf_counter()
-    [print(n) for n in searchAllPlayers(TwvKOnly=False, disableCharts=True, useSaved=1)]
+    [print(n) for n in searchAllClears(TwvKOnly=False, useSaved=1, minScore=5000)]
     print(perf_counter()-st, " s")

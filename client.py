@@ -65,7 +65,7 @@ def printList(l: dict):
 def getInt(s):
     if s:
         return int(s)
-    return 1
+    return 0
 
 
 if __name__ == "__main__":
@@ -107,7 +107,7 @@ if __name__ == "__main__":
                                                                                                         reverse=reverseMode.get(),
                                                                                                         useSaved=not updateSaved.get()
                                                                                                         )))
-    searchAllClr = tk.Button(win, text='Search all charts', command=lambda: printList(searchAllClears(sortBy=sortByClr.get(),
+    searchAllClr = tk.Button(win, text='Search all clears', command=lambda: printList(searchAllClears(sortBy=sortByClr.get(),
                                                                                                       TwvKOnly=TwvKeyMode.get(),
                                                                                                       minScore=getInt(minScore.get()),
                                                                                                       reverse=reverseMode.get(),

@@ -12,6 +12,78 @@ endDeduc = 50
 pwr = 0.7
 
 
+class PlayerObj:
+    def __init__(self):
+        self.params = {"player": "",
+                       "rankedScore": 0,
+                       "generalScore": 0,
+                       "avgXacc": 0,
+                       "totalPasses": 0,
+                       "universalPasses": 0,
+                       "WFPasses": 0,
+                       "topDiff": "",
+                       "top12kDiff": "",
+                       "country": ""
+                       }
+        self.allScores = None
+
+    def updateParams(self, inp: dict):
+        paramKeys = self.params.keys()
+        for key in inp.keys():
+            if key not in paramKeys:
+                raise ValueError(f"Incorrect key! {key}")
+        self.params.update(inp)
+        return self
+
+    def addScores(self, scores):
+        self.allScores = scores
+
+    def get(self):
+        ret = self.params.copy()
+        if self.allScores:
+            ret.update({"allScores": self.allScores})
+        return ret
+
+    def __getitem__(self, arg):
+        return self.params[arg]
+
+class ResultObj:
+    def __init__(self):
+        self.params = {"player": "",
+                       "song": "",
+                       "score": "",
+                       "pguDiff": 0,
+                       "Xacc": 0,
+                       "speed": 1.0,
+                       "isWorldsFirst": False,
+                       "vidLink": "",
+                       "date": None,
+                       "is12K": False,
+                       "isNoHold": False,
+                       "judgements": [],
+                       "pdnDiff": 0,
+                       "chartId": 0,
+                       "passId": 0
+                       }
+
+    def updateParams(self, inp: dict):
+        paramKeys = self.params.keys()
+        for key in inp.keys():
+            if key not in paramKeys:
+                raise ValueError(f"Incorrect key! {key}")
+        self.params.update(inp)
+        return self
+
+    def get(self):
+        return self.params
+
+    def keys(self):
+        return self.params.keys()
+
+    def __getitem__(self, arg):
+        return self.params[arg]
+
+
 class Utils:
     def __init__(self):
         self.allPassSortPriority = [
@@ -44,14 +116,13 @@ class Utils:
         elif am <= start:
             return 1 - startDeduc / 100
         if am <= tp:
-            kOne = m.pow((am-start) / (tp - start), pwr) * (tpDeduc - startDeduc) / 100
+            kOne = m.pow((am - start) / (tp - start), pwr) * (tpDeduc - startDeduc) / 100
             return 1 - startDeduc / 100 - kOne
         elif am <= end:
             kTwo = m.pow((end - am) / (end - tp), pwr) * (endDeduc - tpDeduc) / 100
             return 1 + kTwo - endDeduc / 100
         else:
             return 1 - endDeduc / 100
-
 
     def getXacc(self, inp):
         if not all([type(i) == int for i in inp]):
@@ -84,7 +155,7 @@ class Utils:
             if not SPEED or SPEED == 1:
                 return 1
             elif SPEED > 1:
-                return 2-SPEED
+                return 2 - SPEED
         if SPEED is None or SPEED == 1:
             return 1
         if SPEED < 1:
@@ -139,13 +210,11 @@ class Utils:
 
         rankedScore = 0
         for n in range(top):
-            rankedScore += (0.9**n)*scores[n]
+            rankedScore += (0.9 ** n) * scores[n]
         return rankedScore
 
     def getGeneralScore(self, scores):
         return sum(scores)
-
-
 
 
 class DataScraper:
@@ -156,7 +225,7 @@ class DataScraper:
         self.chartPath = chartPath
         self.passPath = passPath
         self.playerPath = playerPath
-        self.chartsCount, self.passesCount = 0,0
+        self.chartsCount, self.passesCount = 0, 0
         self.pguSort = {"P": 1,
                         "G": 2,
                         "U": 3}
@@ -175,7 +244,6 @@ class DataScraper:
             self.getPasses()
             self.getPlayers()
 
-
     def readCharts(self, path):
         with open(path, "r") as f:
             file = json.load(f)
@@ -191,7 +259,6 @@ class DataScraper:
     def readPlayers(self, path):
         with open(path, "r") as f:
             self.players = json.load(f)
-
 
     def getCharts(self):
         res = r.get(chartLink)
