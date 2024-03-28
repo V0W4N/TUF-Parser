@@ -310,5 +310,5 @@ def searchAllClears(chartPath=chartPathDef , passPath=passPathDef, playerPath=pl
 
 if __name__ == "__main__":
     st = perf_counter()
-    [print(n) for n in searchAllClears(TwvKOnly=False, useSaved=1, minScore=5000)]
+    [print(n) for n in searchAllClears(TwvKOnly=False, useSaved=0, minScore=5000)]
     print(perf_counter()-st, " s")

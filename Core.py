@@ -1,8 +1,8 @@
 import requests as r, json, math as m
+from AsyncGet import AsyncRequest
 
-chartLink = "https://be.t21c.kro.kr/levels"
-passLink = "https://be.t21c.kro.kr/passes"
-plrLink = "https://be.t21c.kro.kr/players"
+baseUrl = "https://be.t21c.kro.kr/"
+links = ["levels", "passes", "players"]
 
 gmConst = 315
 start = 1
@@ -236,10 +236,9 @@ class DataScraper:
         self.pguSort = {"P": 1,
                         "G": 2,
                         "U": 3}
+        self.AsyncReq = AsyncRequest(baseUrl, links)
         if refresh:
-            self.getCharts()
-            self.getPasses()
-            self.getPlayers()
+            self.getAsyncData()
             return
         try:
             if not refresh:
@@ -247,9 +246,13 @@ class DataScraper:
                 self.readPasses(passPath)
                 self.readPlayers(playerPath)
         except:
-            self.getCharts()
-            self.getPasses()
-            self.getPlayers()
+            self.getAsyncData()
+
+    def getAsyncData(self):
+        functions = [self.getCharts, self.getPasses, self.getPlayers]
+        self.AsyncReq.start()
+        for f in zip(functions, range(len(functions))):
+            f[0](self.AsyncReq.responses[f[1]])
 
     def readCharts(self, path):
         with open(path, "r") as f:
@@ -267,25 +270,19 @@ class DataScraper:
         with open(path, "r") as f:
             self.players = json.load(f)
 
-    def getCharts(self):
-        res = r.get(chartLink)
-        print("got charts")
+    def getCharts(self, res):
         self.charts = json.loads(res.content)["results"]
         self.chartsCount = json.loads(res.content)["count"]
         with open(self.chartPath, "w+") as f:
             json.dump(json.loads(res.content), f)
 
-    def getPasses(self):
-        res = r.get(passLink)
-        print("got passes")
+    def getPasses(self, res):
         self.passes = json.loads(res.content)["results"]
         self.passesCount = json.loads(res.content)["count"]
         with open(self.passPath, "w+") as f:
             json.dump(json.loads(res.content), f)
 
-    def getPlayers(self):
-        res = r.get(plrLink)
-        print("got players")
+    def getPlayers(self, res):
         rawPlr = json.loads(res.content)["results"]
         plrDict = {}
         for player in rawPlr:
