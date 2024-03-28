@@ -80,7 +80,7 @@ def searchByChart(chartId: int, chartPath=chartPathDef, passPath=passPathDef, pl
                        }))
     Scores = list(reversed(sorted(Scores, key=lambda x: (x["score"]))))
     datedScores = sorted(Scores, key=lambda x: (x["date"]))
-    datedScores[0].params["isWorldsFirst"] = True
+    datedScores[0]["isWorldsFirst"] = True
     if getAll:
         return datedScores
     usedNames = []

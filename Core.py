@@ -47,6 +47,10 @@ class PlayerObj:
     def __getitem__(self, arg):
         return self.params[arg]
 
+    def __setitem__(self, key, value):
+        self.params[key] = value
+
+
 class ResultObj:
     def __init__(self):
         self.params = {"player": "",
@@ -82,6 +86,9 @@ class ResultObj:
 
     def __getitem__(self, arg):
         return self.params[arg]
+
+    def __setitem__(self, key, value):
+        self.params[key] = value
 
 
 class Utils:
