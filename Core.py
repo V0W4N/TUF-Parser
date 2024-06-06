@@ -1,7 +1,7 @@
 import requests as r, json, math as m
 from AsyncGet import AsyncRequest
 
-baseUrl = "https://be.t21c.kro.kr/"
+baseUrl = "https://be.tuforums.com/"
 links = ["levels", "passes", "players"]
 
 gmConst = 315
