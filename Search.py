@@ -25,7 +25,7 @@ def initData(chartPath, passPath, playerPath, useSaved):
         return DataScraper(chartPathDef, passPathDef, playerPathDef, True)
 
 
-def searchByChart(chartId: int, chartPath=chartPathDef, passPath=passPathDef, playerPath=playerPathDef, useSaved=useSavedDef, data=None, getAll=False) \
+def searchByChart(chartId: int, chartPath=chartPathDef, passPath=passPathDef, playerPath=playerPathDef, useSaved=useSavedDef, data=None, getDates=False) \
         -> (list, list):
     util = Utils()
     directCall = False
@@ -81,7 +81,7 @@ def searchByChart(chartId: int, chartPath=chartPathDef, passPath=passPathDef, pl
     Scores = list(reversed(sorted(Scores, key=lambda x: (x["score"]))))
     datedScores = sorted(Scores, key=lambda x: (x["date"]))
     datedScores[0]["isWorldsFirst"] = True
-    if getAll:
+    if getDates:
         return datedScores
     usedNames = []
     validScores = []
@@ -99,7 +99,7 @@ def searchByChart(chartId: int, chartPath=chartPathDef, passPath=passPathDef, pl
 
 
 
-def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDef, playerPath=playerPathDef, useSaved=useSavedDef, data=None, TwvKOnly=False, showCharts=True) \
+def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDef, playerPath=playerPathDef, useSaved=useSavedDef, data=None, TwvKOnly=False, ppOnly=False, showCharts=True) \
         -> dict:
     util = Utils()
     directCall = False
@@ -160,7 +160,7 @@ def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDe
         try:
             date = datetime.strptime(Pass["vidUploadTime"].split("Z")[0], "%Y-%m-%dT%H:%M:%S")
         except:
-            date = datetime.today()
+            date = datetime(2022, 1, 1) #placeholder time
         if not Pass["speed"]:
             speed = 1.0
         else:
@@ -172,7 +172,7 @@ def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDe
                             "pguDiff": chart["pguDiff"],
                             "Xacc": util.getXacc(Pass["judgements"]),
                             "speed": speed,
-                            "isWorldsFirst": False,
+                            "isWorldsFirst": isWorldsFirst,
                             "vidLink": Pass["vidLink"],
                             "date": date,
                             "is12K": Pass["is12K"],
@@ -181,6 +181,7 @@ def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDe
                             "pdnDiff": chart["pdnDiff"],
                             "chartId": chart["id"],
                             "passId": Pass["id"],
+                            "baseScore": chart["baseScore"]
                        }))
         try:
 
@@ -211,8 +212,9 @@ def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDe
             usedIds.append(Score["chartId"])
             XaccList.append(Score["Xacc"])
 
+
     rankedScore = util.getRankedScore([Score["score"] for Score in validScores])
-    general = util.getGeneralScore([Score["score"] for Score in validScores])
+    general,ppScore,wfScore,tvwKScore = util.calculateScores(validScores)
     topDiff = topDiff[0]+str(topDiff[1])
     top12kDiff = top12kDiff[0]+str(top12kDiff[1])
 
@@ -220,13 +222,16 @@ def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDe
     for Score in validScores:
         scoresNew.append(Score.get())
     if XaccList:
-        avgAcc = sum(XaccList)/len(XaccList)
+        avgAcc = sum(XaccList[:20])/len(XaccList[:20])
     else:
         avgAcc = 0
     Player = PlayerObj().updateParams({
             "player":playerName,
             "rankedScore":rankedScore,
             "generalScore": general,
+            "ppScore": ppScore,
+            "wfScore": wfScore,
+            "12kScore": tvwKScore,
             "avgXacc": avgAcc,
             "totalPasses": len(validScores),
             "universalPasses": uPasses,
@@ -239,12 +244,17 @@ def searchByPlayer(playerName: str, chartPath=chartPathDef , passPath=passPathDe
     return Player.get()
 
 
+WFLookup = {}
 def checkWorldsFirst(Pass, data):
-    passes = searchByChart(Pass["levelId"], data=data, getAll=True)
+    level_id = Pass["levelId"]
+
+    if level_id not in WFLookup:
+        WFLookup[level_id] = searchByChart(level_id, data=data, getDates=True)
+    passes = WFLookup[level_id]
+
     for p in passes:
-        if p["isWorldsFirst"]:
-            if p["chartId"] == Pass["id"]:
-                return True
+        if p["isWorldsFirst"] and p["passId"] == Pass["id"]:
+            return True
     return False
 
 
@@ -270,11 +280,12 @@ def searchAllPlayers(chartPath=chartPathDef , passPath=passPathDef, playerPath=p
             playerLeaderboard.append(search)
             if disableCharts:
                  playerLeaderboard[-1]["allScores"] = ""
+    print("\n")
     priority = util.allPassSortPriority.copy()
     priority.remove(sortBy)
     sortCriteria = [sortBy] + priority
     if reverse:
-        return reversed(sorted(playerLeaderboard, key=lambda x: [x[criteria] for criteria in sortCriteria]))
+        return list(reversed(sorted(playerLeaderboard, key=lambda x: [x[criteria] for criteria in sortCriteria])))
     return sorted(playerLeaderboard, key=lambda x: [x[criteria] for criteria in sortCriteria])
 
 
@@ -310,5 +321,5 @@ def searchAllClears(chartPath=chartPathDef , passPath=passPathDef, playerPath=pl
 
 if __name__ == "__main__":
     st = perf_counter()
-    [print(n) for n in searchAllClears(TwvKOnly=False, useSaved=0, minScore=5000)]
+    [print(n) for n in searchAllPlayers(useSaved=0)]
     print(perf_counter()-st, " s")

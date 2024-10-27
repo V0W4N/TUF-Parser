@@ -9,7 +9,7 @@ from time import perf_counter
 
 class AsyncRequest:
     def __init__(self, baseUrl, links):
-        self.baseUrl = "https://be.t21c.kro.kr/"
+        self.baseUrl = "http://be.t21c.kro.kr/"
         self.links = links
         self.responses = links.copy()
         self.START_TIME = perf_counter()
